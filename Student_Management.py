@@ -1,8 +1,9 @@
-from PyQt6.QtWidgets import QApplication, QVBoxLayout, QLabel, QWidget, QGridLayout, \
-    QLineEdit, QPushButton, QMainWindow, QGraphicsGridLayout, QTableWidget, QTableWidgetItem, QDialog
-from PyQt6.QtGui import QAction
-import sys
 import sqlite3
+import sys
+
+from PyQt6.QtGui import QAction
+from PyQt6.QtWidgets import QApplication, QVBoxLayout, QLineEdit, QPushButton, QMainWindow, QTableWidget, \
+    QTableWidgetItem, QDialog, QComboBox
 
 
 class MainWindow(QMainWindow):
@@ -48,16 +49,43 @@ class InsertDialog(QDialog):
         self.FixedHeight(300)
 
         layout = QVBoxLayout()
+        # add student name
+        self.student_name = QLineEdit()
+        self.student_name.setPlaceholderText("Name")
+        layout.addWidget(self.student_name)
+        # add combo-box
+        self.course_name = QComboBox()
+        courses = ["Maths", "Physics", "Chemistry"]
+        self.course_name.addItems(courses)
+        layout.addWidget(self.course_name)
 
-        student_name = QLineEdit()
-        student_name.setPlaceholderText("Name")
-        layout.addWidget(student_name)
+        # Mobile widget
+        self.mobile = QLineEdit()
+        self.mobile.setPlaceholderText("Mobile")
+        layout.addWidget(self.mobile)
+
+        # submit button
+        button = QPushButton("Submit")
+        button.clicked.connect(self.add_student)
 
         self.setLayout(layout)
 
+    def add_student(self):
+        name = self.student_name.text()
+        course = self.course_name.itemText(self.course_name.currentIndex())
+        mobile = self.mobile.text()
+        connection = sqlite3.connect("database.db")
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO students (name, course, mobile) VALUES (???)",
+                       (name, course, mobile))
+        connection.commit()
+        cursor.close()
+        connection.close()
+        main_window.load_data()
+
 
 app = QApplication(sys.argv)
-age_calculater = MainWindow()
-age_calculater.show()
-age_calculater.load_data()
+main_window = MainWindow()
+main_window.show()
+main_window.load_data()
 sys.exit(app.exec())
