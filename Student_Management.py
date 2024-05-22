@@ -1,30 +1,46 @@
 import sqlite3
 import sys
 
-from PyQt6.QtGui import QAction
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import QApplication, QVBoxLayout, QLineEdit, QPushButton, QMainWindow, QTableWidget, \
-    QTableWidgetItem, QDialog, QComboBox
+    QTableWidgetItem, QDialog, QComboBox, QToolBar
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Student Management System")
+        self.setMinimumSize(800,600)
 
         file_menu_item = self.menuBar().addMenu("&File")
         help_menu_item = self.menuBar().addMenu("&Help")
+        edit_menu_item = self.menuBar().addMenu("&Edit")
 
-        add_student_action = QAction("Add Student", self)
+        add_student_action = QAction(QIcon("icons/add.png"), "Add Student", self)
         add_student_action.triggered.connect(self.insert)
         file_menu_item.addAction(add_student_action)
 
+        search_action = QAction(QIcon("icons/search.png"), "search", self)
+        edit_menu_item.addAction(search_action)
+        search_action.triggered.connect(self.search)
+
         about_action = QAction("About", self)
+        help_menu_item.addAction(about_action)
 
         self.table = QTableWidget()
         self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels(("id", "Name", "Course", "Mobile No"))
         self.table.verticalHeader().setVisible(False)
         self.setCentralWidget(self.table)
+
+        # create toolbar
+        toolbar = QToolBar()
+        toolbar.setMovable(True)
+        self.addToolBar(toolbar)
+        toolbar.addAction(add_student_action)
+
+        toolbar.addAction(search_action)
 
     def load_data(self):
         connection = sqlite3.connect("database.db")
@@ -40,13 +56,17 @@ class MainWindow(QMainWindow):
         dialog = InsertDialog()
         dialog.exec()
 
+    def search(self):
+        pass
+
 
 class InsertDialog(QDialog):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Inset Student Data")
-        self.FixedWidth(300)
-        self.FixedHeight(300)
+    student_added = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Insert Student Data")
+        self.setFixedSize(300, 300)
 
         layout = QVBoxLayout()
         # add student name
@@ -67,6 +87,7 @@ class InsertDialog(QDialog):
         # submit button
         button = QPushButton("Submit")
         button.clicked.connect(self.add_student)
+        layout.addWidget(button)
 
         self.setLayout(layout)
 
@@ -76,12 +97,13 @@ class InsertDialog(QDialog):
         mobile = self.mobile.text()
         connection = sqlite3.connect("database.db")
         cursor = connection.cursor()
-        cursor.execute("INSERT INTO students (name, course, mobile) VALUES (???)",
+        cursor.execute("INSERT INTO students (name, course, mobile) VALUES (?, ?, ?)",
                        (name, course, mobile))
         connection.commit()
         cursor.close()
         connection.close()
-        main_window.load_data()
+        self.student_added.emit()
+        self.close()
 
 
 app = QApplication(sys.argv)
